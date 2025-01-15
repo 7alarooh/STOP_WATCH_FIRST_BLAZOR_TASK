@@ -1,0 +1,128 @@
+﻿@page "/StopWatchFirst"
+
+<h3>Stop Watch First</h3>
+
+<div style="display: flex; flex-direction: column; align-items: center;">
+    <!-- Display the elapsed time in a grid layout for better user experience -->
+    <div style="display: flex; justify-content: center; align-items: center; font-size: 2.5rem; margin: 20px; gap: 5px; border: 2px solid #ccc; padding: 15px; border-radius: 10px; background-color: #f9f9f9;">
+        <!-- Hours -->
+        <span style="font-weight: bold;">@elapsed.Hours.ToString("D2")</span>
+        <span>:</span>
+        <!-- Minutes -->
+        <span style="font-weight: bold;">@elapsed.Minutes.ToString("D2")</span>
+        <span>:</span>
+        <!-- Seconds -->
+        <span style="font-weight: bold;">@elapsed.Seconds.ToString("D2")</span>
+        <span>.</span>
+        <!-- Milliseconds -->
+        <span style="font-weight: bold;">@elapsed.Milliseconds.ToString("D3")</span>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <button @onclick="StartTimer" disabled="@isRunning" title="Start">
+            <span style="font-size: 1.5rem;">▶</span>
+        </button>
+        <button @onclick="StopTimer" disabled="@(!isRunning)" title="Stop">
+            <span style="font-size: 1.5rem;">⏸</span>
+        </button>
+        <button @onclick="LapTime" disabled="@(!isRunning)" title="Lap">
+            <span style="font-size: 1.5rem;">⏱</span>
+        </button>
+        <button @onclick="ResetTimer" title="Reset">
+            <span style="font-size: 1.5rem;">🔄</span>
+        </button>
+    </div>
+
+    <!-- Section to display recorded lap times -->
+    <div>
+        <h4>Laps:</h4>
+        <table style="width: 80%; margin-top: 10px; border-collapse: collapse; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+            <thead style="background-color: #f1f1f1;">
+                <tr>
+                    <th style="padding: 10px; border: 1px solid #ccc; text-align: left;">Lap #</th>
+                    <th style="padding: 10px; border: 1px solid #ccc; text-align: left;">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < laps.Count; i++)
+                {
+                    <tr style="background-color: @((i % 2 == 0) ? "#ffffff" : "#f9f9f9");">
+                        <td style="padding: 10px; border: 1px solid #ccc;">@(i + 1)</td>
+                        <td style="padding: 10px; border: 1px solid #ccc;">@laps[i]</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private System.Timers.Timer timer;
+    private DateTime startTime;
+    private TimeSpan elapsed;
+    private string elapsedTime = "00:00:00.000";
+    private bool isRunning = false;
+    private List<string> laps = new List<string>();
+
+    // Initialize the timer when the component loads
+    protected override void OnInitialized()
+    {
+        timer = new System.Timers.Timer(100); // Timer fires every 100 milliseconds
+        timer.Elapsed += OnTimerElapsed; // Attach the event handler for timer updates
+    }
+
+    // Starts or resumes the stopwatch
+    private void StartTimer()
+    {
+        if (!isRunning) // Only start if the stopwatch is not already running
+        {
+            startTime = DateTime.Now - elapsed; // Adjust start time to account for previous elapsed time
+            timer.Start(); // Start the timer
+            isRunning = true; // Set the running flag to true
+        }
+    }
+
+    // Stops the stopwatch
+    private void StopTimer()
+    {
+        if (isRunning) // Only stop if the stopwatch is running
+        {
+            timer.Stop(); // Stop the timer
+            elapsed = DateTime.Now - startTime; // Update elapsed time
+            isRunning = false; // Set the running flag to false
+        }
+    }
+
+    // Resets the stopwatch to its initial state
+    private void ResetTimer()
+    {
+        timer.Stop(); // Stop the timer
+        elapsed = TimeSpan.Zero; // Reset elapsed time to zero
+        elapsedTime = "00:00:00.000"; // Reset the formatted time string
+        isRunning = false; // Set the running flag to false
+        laps.Clear(); // Clear the lap times list
+    }
+
+    // Records the current elapsed time as a lap
+    private void LapTime()
+    {
+        if (isRunning) // Only record a lap if the stopwatch is running
+        {
+            laps.Add(elapsedTime); // Add the formatted elapsed time to the laps list
+        }
+    }
+
+    // Event handler for timer updates
+    private void OnTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
+    {
+        elapsed = DateTime.Now - startTime; // Calculate the total elapsed time
+        elapsedTime = elapsed.ToString("hh\\:mm\\:ss\\.fff"); // Format the elapsed time
+        InvokeAsync(StateHasChanged); // Trigger a UI update
+    }
+
+    // Clean up resources when the component is disposed
+    public void Dispose()
+    {
+        timer?.Dispose(); // Dispose of the timer to release resources
+    }
+}
